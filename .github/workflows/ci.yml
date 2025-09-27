@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: arha_admin
+          POSTGRES_PASSWORD: arha_test
+          POSTGRES_DB: arha_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U arha_admin -d arha_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Backend expects env vars; we provide them here (no .env in CI)
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USER: arha_admin
+      DB_PASSWORD: arha_test
+      DB_NAME: arha_db
+      ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system tools (psql)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create venv & install deps
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Apply DB schema
+        run: |
+          until psql "postgresql://arha_admin:arha_test@127.0.0.1:5432/arha_db" -c "select 1" >/dev/null 2>&1; do
+            echo "Waiting for Postgres…"; sleep 2;
+          end
+          psql "postgresql://arha_admin:arha_test@127.0.0.1:5432/arha_db" -f database/init.sql
+
+      - name: Lint (ruff) & format check (black)
+        run: |
+          source .venv/bin/activate
+          ruff check backend tests
+          black --check backend tests
+
+      - name: Security scan (bandit)
+        run: |
+          source .venv/bin/activate
+          bandit -r backend -ll
+
+      - name: Run tests
+        env:
+          DATABASE_URL: "postgresql://arha_admin:arha_test@127.0.0.1:5432/arha_db"
+        run: |
+          source .venv/bin/activate
+          pytest -q

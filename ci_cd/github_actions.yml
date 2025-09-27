@@ -1,0 +1,68 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: arha_admin
+          POSTGRES_PASSWORD: arha_test
+          POSTGRES_DB: arha_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U arha_admin -d arha_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend deps
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Lint (ruff) and format check (black)
+        run: |
+          source .venv/bin/activate
+          pip install ruff black
+          ruff check backend || true
+          black --check backend
+
+      - name: Run unit tests
+        env:
+          DATABASE_URL: "postgresql://arha_admin:arha_test@localhost:5432/arha_db"
+        run: |
+          source .venv/bin/activate
+          pip install pytest
+          pytest -q
+
+      - name: Security scan (bandit)
+        run: |
+          source .venv/bin/activate
+          pip install bandit
+          bandit -r backend -ll
+          
+      - name: Build docker image
+        run: |
+          docker build -f docker/Dockerfile -t arha/backend:ci-${{ github.sha }} .
+
