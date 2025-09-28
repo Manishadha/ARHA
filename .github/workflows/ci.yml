@@ -58,8 +58,9 @@ jobs:
       - name: Apply DB schema
         run: |
           until psql "postgresql://arha_admin:arha_test@127.0.0.1:5432/arha_db" -c "select 1" >/dev/null 2>&1; do
-            echo "Waiting for Postgres…"; sleep 2;
-          end
+            echo "Waiting for Postgres…"
+            sleep 2
+          done
           psql "postgresql://arha_admin:arha_test@127.0.0.1:5432/arha_db" -f database/init.sql
 
       - name: Lint (ruff) & format check (black)
