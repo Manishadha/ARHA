@@ -56,11 +56,19 @@ jobs:
           pip install -r backend/requirements.txt
 
       - name: Apply DB schema
+        shell: bash
         run: |
-          until psql "postgresql://arha_admin:arha_test@127.0.0.1:5432/arha_db" -c "select 1" >/dev/null 2>&1; do
-            echo "Waiting for Postgres…"
+          set -euo pipefail
+          # Wait up to ~60s for Postgres to be ready
+          for i in {1..30}; do
+            if psql "postgresql://arha_admin:arha_test@127.0.0.1:5432/arha_db" -c "select 1" >/dev/null 2>&1; then
+              echo "Postgres is ready."
+              break
+            fi
+            echo "Waiting for Postgres… ($i/30)"
             sleep 2
           done
+          # Apply schema
           psql "postgresql://arha_admin:arha_test@127.0.0.1:5432/arha_db" -f database/init.sql
 
       - name: Lint (ruff) & format check (black)
