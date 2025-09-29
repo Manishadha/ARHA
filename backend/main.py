@@ -6,6 +6,7 @@ app = FastAPI(title="ARHA API", version="2025.9")
 
 engine = create_engine(settings.database_url(), pool_pre_ping=True)
 
+
 @app.get("/health")
 def health():
     with engine.connect() as conn:

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class Settings:
     DB_HOST = os.getenv("DB_HOST", "localhost")
     DB_PORT = int(os.getenv("DB_PORT", "5432"))
@@ -13,6 +14,7 @@ class Settings:
 
     def database_url(self):
         from sqlalchemy.engine import URL
+
         return URL.create(
             "postgresql+psycopg2",
             username=self.DB_USER,
@@ -21,5 +23,6 @@ class Settings:
             port=self.DB_PORT,
             database=self.DB_NAME,
         )
+
 
 settings = Settings()
