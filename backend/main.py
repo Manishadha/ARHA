@@ -9,6 +9,7 @@ from sqlalchemy import create_engine, text
 from backend.middleware.audit_trail import RequestContextMiddleware
 from backend.utils.config import settings
 from backend.utils.logging import configure_logging, append_audit
+from backend.api.auth import router as auth_router
 
 DDL_AUDIT = """
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -30,11 +31,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 """
-with engine.begin() as conn:
-    conn.execute(text(DDL_AUDIT))
-    conn.execute(text(DDL_USERS))
 
-
+# Create engine first
 engine = create_engine(settings.database_url(), pool_pre_ping=True)
 
 
@@ -43,12 +41,14 @@ async def lifespan(app: FastAPI):
     # Ensure minimal schema before serving any requests
     with engine.begin() as conn:
         conn.execute(text(DDL_AUDIT))
+        conn.execute(text(DDL_USERS))
     yield
 
 
 configure_logging()
 app = FastAPI(title="ARHA API", version="2025.9", lifespan=lifespan)
 app.add_middleware(RequestContextMiddleware)
+app.include_router(auth_router)
 
 
 @app.get("/health")
