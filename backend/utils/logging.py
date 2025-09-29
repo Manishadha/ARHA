@@ -6,6 +6,42 @@ import hashlib
 from datetime import datetime, timezone
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import ProgrammingError
+
+DDL_AUDIT = """
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGSERIAL PRIMARY KEY,
+  ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  actor TEXT NOT NULL,
+  action TEXT NOT NULL,
+  target TEXT,
+  hash_chain BYTEA
+);
+"""
+
+
+def ensure_audit_table(engine: Engine) -> None:
+    with engine.begin() as conn:
+        conn.execute(text(DDL_AUDIT))
+
+
+def append_audit(
+    engine: Engine, *, actor: str, action: str, target: str | None = None
+) -> None:
+    ts = datetime.now(timezone.utc).isoformat()
+    try:
+        with engine.begin() as conn:
+            prev = conn.execute(
+                text("SELECT hash_chain FROM audit_logs ORDER BY id DESC LIMIT 1")
+            ).scalar()
+    except ProgrammingError:
+        # table missing: create and retry once
+        ensure_audit_table(engine)
+        with engine.begin() as conn:
+            prev = conn.execute(
+                text("SELECT hash_chain FROM audit_logs ORDER BY id DESC LIMIT 1")
+            ).scalar()
+
 
 _request_id: ContextVar[str] = ContextVar("request_id", default="-")
 
