@@ -7,7 +7,7 @@ from backend.utils.logging import set_request_id
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        rid = set_request_id()
+        set_request_id()
         logger.info(f"request_start {request.method} {request.url.path}")
         try:
             response: Response = await call_next(request)
