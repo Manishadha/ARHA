@@ -21,6 +21,20 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 """
 
+DDL_USERS = """
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+"""
+with engine.begin() as conn:
+    conn.execute(text(DDL_AUDIT))
+    conn.execute(text(DDL_USERS))
+
+
 engine = create_engine(settings.database_url(), pool_pre_ping=True)
 
 
