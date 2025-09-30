@@ -6,10 +6,11 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlalchemy import create_engine, text
 
-from backend.middleware.audit_trail import RequestContextMiddleware
-from backend.utils.config import settings
-from backend.utils.logging import configure_logging, append_audit
 from backend.api.auth import router as auth_router
+from backend.middleware.audit_trail import RequestContextMiddleware
+from backend.middleware.redact_pii import RedactPIIMiddleware
+from backend.utils.config import settings
+from backend.utils.logging import append_audit, configure_logging
 
 DDL_AUDIT = """
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -48,6 +49,7 @@ async def lifespan(app: FastAPI):
 configure_logging()
 app = FastAPI(title="ARHA API", version="2025.9", lifespan=lifespan)
 app.add_middleware(RequestContextMiddleware)
+app.add_middleware(RedactPIIMiddleware)
 app.include_router(auth_router)
 
 
