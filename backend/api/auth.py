@@ -1,12 +1,12 @@
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
 from backend.utils.config import settings
-from backend.utils.crypto import hash_password, verify_password, create_jwt
+from backend.utils.crypto import create_jwt, hash_password, verify_password
 from backend.utils.logging import append_audit
 
 __all__ = ["router"]
@@ -39,9 +39,9 @@ def signup(payload: SignupIn):
             )
         append_audit(engine, actor=payload.email, action="signup", target="users")
         return {"id": uid, "email": payload.email}
-    except Exception:
+    except Exception as err:
         # duplicate email or other constraint
-        raise HTTPException(status_code=409, detail="email_exists")
+        raise HTTPException(status_code=409, detail="email_exists") from None
 
 
 @router.post("/login")
@@ -67,6 +67,6 @@ def me(authorization: str = Header(default="")):
 
     try:
         claims = decode_jwt(token)
-    except Exception:
-        raise HTTPException(status_code=401, detail="invalid_token")
+    except Exception as err:
+        raise HTTPException(status_code=401, detail="invalid_token") from None
     return {"sub": claims["sub"]}
