@@ -18,3 +18,13 @@ dist/
 *.pid
 coverage/
 .env.backup
+
+# Local keys, logs, artifacts
+*.log
+uvicorn.out
+*.sqlite
+sbom.json
+licenses.json
+.env.backup
+mani
+mani.pub

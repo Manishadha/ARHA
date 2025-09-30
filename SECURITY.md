@@ -19,3 +19,5 @@ Hardening (Buyer)
 
 Secrets
 - No secrets in repo. .env is git-ignored.
+
+If any secret was ever committed, rotate it and consider history rewrite (git filter-repo).

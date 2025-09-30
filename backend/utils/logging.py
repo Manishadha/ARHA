@@ -1,9 +1,10 @@
-from loguru import logger
+import hashlib
 import sys
 import uuid
 from contextvars import ContextVar
-import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
+from loguru import logger
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
@@ -56,10 +57,8 @@ def ensure_audit_table(engine: Engine) -> None:
         conn.execute(text(DDL_AUDIT))
 
 
-def append_audit(
-    engine: Engine, *, actor: str, action: str, target: str | None = None
-) -> None:
-    ts = datetime.now(timezone.utc).isoformat()
+def append_audit(engine: Engine, *, actor: str, action: str, target: str | None = None) -> None:
+    ts = datetime.now(UTC).isoformat()
     # Fetch previous hash (create table if missing)
     try:
         with engine.begin() as conn:

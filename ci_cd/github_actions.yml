@@ -1,11 +1,11 @@
 ---
 name: CI
 
-on:
+"on":
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   checks:
@@ -50,6 +50,7 @@ jobs:
 
       - name: Run unit tests
         env:
+          # yamllint disable-line rule:line-length
           DATABASE_URL: "postgresql://arha_admin:arha_test@localhost:5432/arha_db"
         run: |
           source .venv/bin/activate

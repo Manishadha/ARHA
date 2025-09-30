@@ -39,7 +39,7 @@ def signup(payload: SignupIn):
             )
         append_audit(engine, actor=payload.email, action="signup", target="users")
         return {"id": uid, "email": payload.email}
-    except Exception as err:
+    except Exception:
         # duplicate email or other constraint
         raise HTTPException(status_code=409, detail="email_exists") from None
 
@@ -67,6 +67,6 @@ def me(authorization: str = Header(default="")):
 
     try:
         claims = decode_jwt(token)
-    except Exception as err:
+    except Exception:
         raise HTTPException(status_code=401, detail="invalid_token") from None
     return {"sub": claims["sub"]}
